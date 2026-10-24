@@ -1,0 +1,19 @@
+{
+  "name": "digital-wallet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start:dev": "nodemon server.js"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.3.0",
+    "mongoose": "^9.11.4"
+  },
+  "devDependencies": {
+    "dotenv": "^18.0.9",
+    "nodemon": "^3.1.14"
+  }
+}
