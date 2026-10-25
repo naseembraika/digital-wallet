@@ -2,12 +2,10 @@ const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
   account_number: {
-    type: String,
+    type: mongoose.Schema.Types.UUID,
     default: () => new mongoose.Types.UUID().toString(),
     required: true,
     unique: true,
-    match:
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/,
   },
   name: {
     type: String,
@@ -23,6 +21,4 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-const UserModule = mongoose.model('users', userSchema);
-
-module.exports = UserModule;
+module.exports = mongoose.model('users', userSchema);
