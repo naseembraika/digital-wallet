@@ -5,10 +5,18 @@
 - Create user account
 - Transferred money [internal/external]
 
-# Create user `end-point`
+# User `end-points`
+
+## Get all users
 
 ```rest
-POST http://localhost:3000/users/
+GET http://localhost:3000/users
+```
+
+## Create user
+
+```rest
+POST http://localhost:3000/users
 Content-Type: application/json
 
 {
@@ -17,7 +25,9 @@ Content-Type: application/json
 }
 ```
 
-# Send money internal `end-point`
+# Transactions `end-point`
+
+## Send money **internally** end-point
 
 ```rest
 POST http://localhost:3000/transactions/send/internal
