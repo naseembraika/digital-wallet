@@ -10,6 +10,15 @@ const createUser = asyncHandler(async (req, res, next) => {
   });
 });
 
+const find = asyncHandler(async (req, res, next) => {
+  const users = await UserModel.find();
+  res.status(200).json({
+    status: 'success',
+    data: users,
+  });
+});
+
 module.exports = {
   createUser,
+  find,
 };
