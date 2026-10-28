@@ -1,4 +1,7 @@
-const TransactionsModel = require('../models/transactions.model');
+const {
+  Transactions,
+  InternalTransaction,
+} = require('../models/transactions.model');
 const UserModel = require('../models/users.model');
 const asyncHandler = require('../middlewares/asyncHandler');
 const AppError = require('../errors/AppError');
@@ -40,7 +43,7 @@ const getIdempotencyKey = (req) => {
 
 const sendInternal = asyncHandler(async (req, res, next) => {
   const idempotencyKey = getIdempotencyKey(req);
-  if (req.senderId === req.receiverId) {
+  if (req.body.senderId === req.body.receiverId) {
     throw new AppError(400, "User can't send money to himself");
   }
 
@@ -48,7 +51,7 @@ const sendInternal = asyncHandler(async (req, res, next) => {
 
   try {
     await session.withTransaction(async () => {
-      const doc = await TransactionsModel.findOne({ idempotencyKey });
+      const doc = await Transactions.findOne({ idempotencyKey });
 
       if (doc) throw new AppError(400, 'This request processed before');
 
@@ -85,17 +88,13 @@ const sendInternal = asyncHandler(async (req, res, next) => {
         session,
       );
 
-      const [transaction] = await TransactionsModel.create(
-        [
-          {
-            amount: data.amount,
-            senderAccount: senderAccount._id,
-            receiverAccount: receiverAccount._id,
-            idempotencyKey,
-          },
-        ],
-        { session },
-      );
+      const transaction = new InternalTransaction({
+        amount: data.amount,
+        senderAccount: senderAccount._id,
+        receiverAccount: receiverAccount._id,
+        idempotencyKey,
+      });
+      await transaction.save({ session });
 
       res.status(200).json({
         status: 'success',
