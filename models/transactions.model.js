@@ -5,6 +5,7 @@ const TransactionsSchema = new mongoose.Schema({
     type: String,
     enum: ['internal', 'external'],
     default: 'internal',
+    required: true,
   },
   amount: {
     type: Number,
@@ -16,17 +17,30 @@ const TransactionsSchema = new mongoose.Schema({
     ref: 'users',
     required: true,
   },
-  receiverAccount: {
-    type: mongoose.Types.ObjectId,
-    ref: 'users',
-  },
-  receiverUUIDAccount: {
-    type: mongoose.Types.UUID,
-  },
   idempotencyKey: {
     type: String,
     required: true,
   },
+  createdAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model('transactions', TransactionsSchema);
+const Transactions = mongoose.model('transactions', TransactionsSchema);
+
+const InternalTransaction = Transactions.discriminator(
+  'InternalTransaction',
+  new mongoose.Schema(
+    {
+      receiverAccount: {
+        type: mongoose.Types.ObjectId,
+        ref: 'users',
+        required: true,
+      },
+    },
+    { discriminatorKey: 'kind' },
+  ),
+);
+
+module.exports = {
+  Transactions,
+  InternalTransaction,
+};
