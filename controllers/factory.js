@@ -14,9 +14,16 @@ const findOneBySession = async (Model, filter, session) => {
   return await Model.findOne(filter).session(session);
 };
 
+const findOneAndUpdateBySession = async (Model, filter, update, session) => {
+  return await Model.findOneAndUpdate(filter, update, {
+    returnDocument: 'after',
+  }).session(session);
+};
+
 module.exports = {
   create,
   find,
   findOne,
   findOneBySession,
+  findOneAndUpdateBySession,
 };
