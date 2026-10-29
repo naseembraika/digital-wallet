@@ -10,34 +10,6 @@ const mongoose = require('mongoose');
 const xml = require('xml');
 const factory = require('./factory');
 
-const findOneUser = async (filter, session) => {
-  let query = UserModel.findOne(filter);
-  if (session) query.session(session);
-  return await query;
-};
-
-const findOneAndUpdate = async (filter, update, options, session) => {
-  let query = UserModel.findOneAndUpdate(filter, update, options);
-  if (session) query.session(session);
-  return await query;
-};
-
-/**
- *
- * @param {mongoose.Types.ObjectId} userId - User who send or receive money
- * @param {Number} amount - For sender amount is negative | For receiver amount is positive
- * @param {mongoose.ClientSession} session - Transaction session
- * @returns {Promise<mongoose.UpdateWriteOpResult>}
- */
-const sendMoney = async (userId, amount, session) => {
-  return await findOneAndUpdate(
-    { _id: userId },
-    { $inc: { balance: amount } },
-    { returnDocument: 'after' },
-    session,
-  );
-};
-
 const getIdempotencyKey = (req) => {
   const idempotencyKey = req.headers['idempotency-key'];
   if (!idempotencyKey) throw new AppError(400, 'Idempotency key not exists');
@@ -59,11 +31,9 @@ const sendInternal = asyncHandler(async (req, res, next) => {
 
   try {
     await session.withTransaction(async () => {
-      const doc = await Transactions.findOne({ idempotencyKey });
+      await checkIdempotencyKeyExists(idempotencyKey);
 
-      if (doc) throw new AppError(400, 'This request processed before');
-
-      const data = {
+      const requestBody = {
         type: 'internal',
         senderId: req.body.senderId,
         receiverId: req.body.receiverId,
@@ -71,36 +41,43 @@ const sendInternal = asyncHandler(async (req, res, next) => {
       };
 
       // Check if sender account exists & have enough money
-      const senderAccount = await findOneUser({ _id: data.senderId }, session);
+      const senderAccount = await factory.findOneBySession(
+        UserModel,
+        { _id: requestBody.senderId },
+        session,
+      );
       if (!senderAccount)
         throw new AppError(404, "Sender doesn't have account");
-      if (data.amount > senderAccount.balance || data.amount < 0)
+      if (requestBody.amount > senderAccount.balance)
         throw new AppError(400, "Sender doesn't have enough money");
 
       // Check if receiver account exists
-      const receiverAccount = await findOneUser(
-        { _id: data.receiverId },
+      const receiverAccount = await factory.findOneBySession(
+        UserModel,
+        { _id: requestBody.receiverId },
         session,
       );
       if (!receiverAccount)
         throw new AppError(404, "Receiver doesn't have account");
 
       // Update sender account balance
-      const updateSender = await sendMoney(
-        senderAccount._id,
-        -data.amount,
+      const updateSender = await factory.findOneAndUpdateBySession(
+        UserModel,
+        { _id: senderAccount._id },
+        { $inc: { balance: -requestBody.amount } },
         session,
       );
 
       // Update receiver account balance
-      const updateReceiver = await sendMoney(
-        receiverAccount._id,
-        data.amount,
+      const updateReceiver = await factory.findOneAndUpdateBySession(
+        UserModel,
+        { _id: receiverAccount._id },
+        { $inc: { balance: requestBody.amount } },
         session,
       );
 
       const transaction = new InternalTransaction({
-        amount: data.amount,
+        amount: requestBody.amount,
         senderAccount: senderAccount._id,
         receiverAccount: receiverAccount._id,
         idempotencyKey,
