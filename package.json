@@ -10,7 +10,8 @@
   "type": "commonjs",
   "dependencies": {
     "express": "^5.3.0",
-    "mongoose": "^9.11.4"
+    "mongoose": "^9.11.4",
+    "xml": "^1.0.1"
   },
   "devDependencies": {
     "dotenv": "^18.0.9",
