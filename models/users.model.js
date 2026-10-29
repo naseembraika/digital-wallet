@@ -1,10 +1,15 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
-  account_number: {
-    type: mongoose.Schema.Types.UUID,
-    default: () => new mongoose.Types.UUID().toString(),
-    required: true,
+  accountNumber: {
+    type: String,
+    default: () => {
+      const buffer = crypto.randomBytes(8);
+      const bigIntString = BigInt(`0x${buffer.toString('hex')}`).toString();
+      const accountNumber = `DIGITAL${bigIntString.slice(bigIntString.length - 17)}`;
+      return accountNumber;
+    },
     unique: true,
   },
   name: {
@@ -15,7 +20,7 @@ const userSchema = new mongoose.Schema({
     trim: true,
   },
   balance: {
-    type: Number,
+    type: mongoose.Types.Double,
     min: 0,
     default: 0,
   },
