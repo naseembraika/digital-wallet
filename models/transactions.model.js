@@ -4,8 +4,7 @@ const { randomUUID } = require('crypto');
 const TransactionsSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['internal', 'external'],
-    default: 'internal',
+    enum: ['send/internal', 'send/external', 'receive'],
     required: true,
   },
   amount: {

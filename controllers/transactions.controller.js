@@ -34,7 +34,7 @@ const sendInternal = asyncHandler(async (req, res, next) => {
       await checkIdempotencyKeyExists(idempotencyKey);
 
       const requestBody = {
-        type: 'internal',
+        type: 'send/internal',
         senderId: req.body.senderId,
         receiverId: req.body.receiverId,
         amount: req.body.amount,
@@ -180,7 +180,7 @@ const sendExternal = asyncHandler(async (req, res, next) => {
 
       const requestBody = {
         ...req.body,
-        type: 'external',
+        type: 'send/external',
         idempotencyKey,
       };
 
