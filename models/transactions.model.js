@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { randomUUID } = require('crypto');
 
 const TransactionsSchema = new mongoose.Schema({
   type: {
@@ -40,7 +41,29 @@ const InternalTransaction = Transactions.discriminator(
   ),
 );
 
+const ExternalTransaction = Transactions.discriminator(
+  'ExternalTransaction',
+  new mongoose.Schema(
+    {
+      reference: {
+        type: mongoose.Types.UUID,
+        default: randomUUID(),
+        unique: true,
+      },
+      bankCode: { type: String, required: true },
+      accountNumber: { type: String, required: true },
+      beneficiaryName: { type: String, required: true },
+      currency: { type: String, required: true },
+      notes: [String],
+      paymentType: { type: Number, required: true },
+      chargeDetails: { type: String, required: true },
+    },
+    { discriminatorKey: 'kind' },
+  ),
+);
+
 module.exports = {
   Transactions,
   InternalTransaction,
+  ExternalTransaction,
 };
