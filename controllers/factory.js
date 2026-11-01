@@ -2,6 +2,10 @@ const create = async (Model, data) => {
   return await Model.create(data);
 };
 
+const createBySession = async (Model, data, session) => {
+  return await Model.create([data], { session });
+};
+
 const find = async (Model, filter) => {
   return await Model.find(filter);
 };
@@ -22,6 +26,7 @@ const findOneAndUpdateBySession = async (Model, filter, update, session) => {
 
 module.exports = {
   create,
+  createBySession,
   find,
   findOne,
   findOneBySession,
