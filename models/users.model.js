@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
     trim: true,
   },
   balance: {
-    type: mongoose.Types.Double,
+    type: Number,
     min: 0,
     default: 0,
   },
