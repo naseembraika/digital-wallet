@@ -1,6 +1,8 @@
 const AppError = require('../errors/AppError');
 
 const normalizeError = (err) => {
+  if (err.isOperational) return err;
+
   if (err.name === 'ValidationError') {
     const message = Object.values(err.errors)
       .map((validationError) => validationError.message)
@@ -19,8 +21,6 @@ const normalizeError = (err) => {
   if (err.cause.hostname === 'v6.exchangerate-api.com') {
     return new AppError(400, 'Fetching from exchange rate API failed');
   }
-
-  return err;
 };
 
 const sendDevelopmentError = (err, res) => {
