@@ -12,7 +12,7 @@ const getIdempotencyKey = require('../utils/getIdempotencyKey');
 const checkIdempotencyKey = require('../utils/checkIdempotencyKey');
 const generateXMLTransaction = require('../utils/generateXMLTransaction');
 
-const sendInternal = asyncHandler(async (req, res, next) => {
+const sendInternal = async (req, res, next) => {
   const idempotencyKey = getIdempotencyKey(req);
   if (req.body.senderId === req.body.receiverId) {
     throw new AppError(400, "User can't send money to himself");
@@ -80,7 +80,7 @@ const sendInternal = asyncHandler(async (req, res, next) => {
   } finally {
     await session.endSession();
   }
-});
+};
 
 const checkUserHaveEnoughBalance = async (userBalance, requestBody) => {
   // Fetch currency change rate
@@ -93,7 +93,7 @@ const checkUserHaveEnoughBalance = async (userBalance, requestBody) => {
   const exchangeData = await response.json();
 
   if (response.status != 200) {
-    throw new AppError(404, exchangeData['error-type']);
+    throw new AppError(404, 'Fetching EXCHANGE_RATE failed');
   }
 
   // Convert amountNeeded currency to $ value
@@ -108,7 +108,7 @@ const checkUserHaveEnoughBalance = async (userBalance, requestBody) => {
   return amountNeeded;
 };
 
-const sendExternal = asyncHandler(async (req, res, next) => {
+const sendExternal = async (req, res, next) => {
   const idempotencyKey = getIdempotencyKey(req);
   const session = await mongoose.startSession();
 
@@ -163,9 +163,14 @@ const sendExternal = asyncHandler(async (req, res, next) => {
   } finally {
     await session.endSession();
   }
+};
+
+const send = asyncHandler(async (req, res, next) => {
+  if (req.params.type === 'internal') await sendInternal(req, res, next);
+  if (req.params.type === 'external') await sendExternal(req, res, next);
+  throw new AppError(404, 'Wrong type of transactions');
 });
 
 module.exports = {
-  sendInternal,
-  sendExternal,
+  send,
 };
