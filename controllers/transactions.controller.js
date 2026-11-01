@@ -27,7 +27,7 @@ const sendInternal = async (req, res, next) => {
       const requestBody = {
         senderId: req.body.senderId,
         receiverId: req.body.receiverId,
-        amount: req.body.amount,
+        amount: Number.parseFloat(req.body.amount.toFixed(2)),
       };
 
       // Check if sender account exists & have enough money
@@ -52,11 +52,11 @@ const sendInternal = async (req, res, next) => {
 
       // Update sender account balance
       senderAccount.balance -= requestBody.amount;
-      senderAccount.save({ session });
+      await senderAccount.save({ session });
 
       // Update receiver account balance
       receiverAccount.balance += requestBody.amount;
-      receiverAccount.save({ session });
+      await receiverAccount.save({ session });
 
       const transaction = new InternalTransaction({
         type: 'internal',
@@ -121,6 +121,7 @@ const sendExternal = async (req, res, next) => {
         ...req.body,
         type: 'external',
         idempotencyKey,
+        amount: Number.parseFloat(req.body.amount.toFixed(2)),
       };
 
       // Check if sender account is exists
@@ -166,8 +167,8 @@ const sendExternal = async (req, res, next) => {
 };
 
 const send = asyncHandler(async (req, res, next) => {
-  if (req.params.type === 'internal') await sendInternal(req, res, next);
-  if (req.params.type === 'external') await sendExternal(req, res, next);
+  if (req.params.type === 'internal') return await sendInternal(req, res, next);
+  if (req.params.type === 'external') return await sendExternal(req, res, next);
   throw new AppError(404, 'Wrong type of transactions');
 });
 
