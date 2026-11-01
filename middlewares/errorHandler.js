@@ -12,6 +12,10 @@ const normalizeError = (err) => {
     return new AppError(400, 'Wrong UUID format check the idempotency key');
   }
 
+  if (err.name === 'CastError') {
+    return new AppError(400, `Invalid type of ${err.message}`);
+  }
+
   return err;
 };
 
