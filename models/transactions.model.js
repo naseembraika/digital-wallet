@@ -4,7 +4,7 @@ const { randomUUID } = require('crypto');
 const TransactionsSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['send/internal', 'send/external', 'receive'],
+    enum: ['internal', 'external'],
     required: true,
   },
   amount: {
@@ -18,8 +18,9 @@ const TransactionsSchema = new mongoose.Schema({
     required: true,
   },
   idempotencyKey: {
-    type: String,
+    type: mongoose.Types.UUID,
     required: true,
+    unique: true,
   },
   createdAt: { type: Date, default: Date.now },
 });
