@@ -8,6 +8,10 @@ const normalizeError = (err) => {
     return new AppError(400, message);
   }
 
+  if (err.name === 'BSONError') {
+    return new AppError(400, 'Wrong UUID format check the idempotency key');
+  }
+
   return err;
 };
 
