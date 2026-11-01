@@ -1,14 +1,11 @@
 const express = require('express');
+const globalMiddleware = require('./middlewares/globalMiddleware');
 const routes = require('./routes');
 const errorHandler = require('./middlewares/errorHandler');
-const morgan = require('morgan');
 
 const app = express();
 
-app.use(express.json());
-app.use(express.text());
-app.use(express.urlencoded({ extended: false }));
-app.use(morgan('dev'));
+globalMiddleware(app);
 
 routes(app);
 
