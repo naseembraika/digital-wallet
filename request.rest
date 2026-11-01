@@ -1,0 +1,70 @@
+### Create User 1
+POST http://localhost:3000/users HTTP/1.1
+Content-Type: application/json
+
+{
+  "name": "Foo Bar",
+  "balance": 500
+}
+
+### Create User 2
+POST http://localhost:3000/users HTTP/1.1
+Content-Type: application/json
+
+{
+  "name": "Jan Doo",
+  "balance": 0
+}
+
+### Get Users
+GET http://localhost:3000/users HTTP/1.1
+
+### Get User By ID
+GET http://localhost:3000/users/6ae705d2690b313e8bfc44db HTTP/1.1
+
+### Send Money -- Internal (between wallet users)
+
+POST http://localhost:3000/transactions/send/internal HTTP/1.1
+Content-Type: application/json
+idempotency-key: bbd11410-0abe-48e8-a62e-5c08465a2057
+
+{
+  "senderId": "6ae74eece7b8f85f8197415b",
+  "receiverId": "6ae74eede7b8f85f8197415c",
+  "amount": 10.5
+}
+
+### Send Money -- External (From wallet user to external Bank User)
+
+POST http://localhost:3000/transactions/send/external HTTP/1.1
+Content-Type: application/json
+idempotency-key: bbd10408-0abe-48e8-a62e-5c08465a2052
+
+{
+  "senderAccount": "DIGITAL05872776457346454",
+  "bankCode": "FDCSSARI",
+  "accountNumber": "SA6980000204608016211111",
+  "beneficiaryName": "Some One",
+  "amount": 50,
+  "notes": ["Note1", "Note2"],
+  "currency": "ILS",
+  "paymentType": "100",
+  "chargeDetails": "RSA"
+}
+
+### Currency converter API
+GET https://v6.exchangerate-api.com/v6/API_KEY/latest/USD HTTP/1.1
+
+### Receiving Money from PayTech Bank
+POST http://localhost:3000/webhook/paytech/DIGITAL72443074744246207 HTTP/1.1
+Content-Type: text/plain
+idempotency-key: 735dee91-fa14-4731-bb4b-65984bd71622
+
+20250615,156,50#202506159000001#note/debt payment march/internal_reference/A462JE81
+
+### Receiving Money from Acme Bank
+POST http://localhost:3000/webhook/acme/DIGITAL72443074744246207 HTTP/1.1
+Content-Type: text/plain
+idempotency-key: 735dee82-fa14-4731-bb4b-65984bd71622
+
+150,50//202506159000001//20250615
