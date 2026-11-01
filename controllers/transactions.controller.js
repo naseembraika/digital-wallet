@@ -7,10 +7,10 @@ const UserModel = require('../models/users.model');
 const asyncHandler = require('../middlewares/asyncHandler');
 const AppError = require('../errors/AppError');
 const mongoose = require('mongoose');
-const xml = require('xml');
 const factory = require('./factory');
 const getIdempotencyKey = require('../utils/getIdempotencyKey');
 const checkIdempotencyKey = require('../utils/checkIdempotencyKey');
+const generateXMLTransaction = require('../utils/generateXMLTransaction');
 
 const sendInternal = asyncHandler(async (req, res, next) => {
   const idempotencyKey = getIdempotencyKey(req);
@@ -108,49 +108,6 @@ const checkUserHaveEnoughBalance = async (userBalance, requestBody) => {
   return amountNeeded;
 };
 
-const generateXML = (transaction, senderAccount) => {
-  let xmlSchema = {
-    PaymentRequestMessage: [
-      {
-        TransferInfo: [
-          { Reference: transaction.reference.toString() },
-          { Date: transaction.createdAt.toString() },
-          { Amount: transaction.amount },
-          { Currency: transaction.currency },
-        ],
-      },
-      {
-        SenderInfo: [{ AccountNumber: senderAccount.accountNumber.toString() }],
-      },
-      {
-        ReceiverInfo: [
-          { BankCode: transaction.bankCode },
-          { AccountNumber: transaction.accountNumber },
-          { BeneficiaryName: transaction.beneficiaryName },
-        ],
-      },
-    ],
-  };
-
-  if (transaction.notes.length > 0) {
-    let notes = [];
-    transaction.notes.forEach((note) => notes.push({ Note: note }));
-    xmlSchema.PaymentRequestMessage.push({ Notes: notes });
-  }
-  if (transaction.paymentType != 99) {
-    xmlSchema.PaymentRequestMessage.push({
-      PaymentType: transaction.paymentType,
-    });
-  }
-  if (transaction.chargeDetails !== 'SHA') {
-    xmlSchema.PaymentRequestMessage.push({
-      ChargeDetails: transaction.chargeDetails,
-    });
-  }
-
-  return xml([xmlSchema], { declaration: true });
-};
-
 const sendExternal = asyncHandler(async (req, res, next) => {
   const idempotencyKey = getIdempotencyKey(req);
   const session = await mongoose.startSession();
@@ -181,12 +138,8 @@ const sendExternal = asyncHandler(async (req, res, next) => {
       );
 
       // Update sender account balance
-      const updateSender = await factory.findOneAndUpdateBySession(
-        UserModel,
-        { _id: senderAccount._id },
-        { $inc: { balance: -amountNeeded } },
-        session,
-      );
+      senderAccount.balance -= amountNeeded;
+      await senderAccount.save({ session });
 
       // Create external transaction
       const transaction = new ExternalTransaction({
@@ -195,14 +148,14 @@ const sendExternal = asyncHandler(async (req, res, next) => {
       });
       await transaction.save({ session });
 
-      const xmlString = generateXML(transaction, senderAccount);
+      const xmlString = generateXMLTransaction(transaction, senderAccount);
 
       res.status(201).json({
         status: 'success',
         message: 'Data transferred successfully',
         data: {
           transaction,
-          updateSender,
+          senderAccount,
           xml: xmlString,
         },
       });
