@@ -9,17 +9,8 @@ const AppError = require('../errors/AppError');
 const mongoose = require('mongoose');
 const xml = require('xml');
 const factory = require('./factory');
-
-const getIdempotencyKey = (req) => {
-  const idempotencyKey = req.headers['idempotency-key'];
-  if (!idempotencyKey) throw new AppError(400, 'Idempotency key not exists');
-  return idempotencyKey;
-};
-
-const checkIdempotencyKeyExists = async (idempotencyKey) => {
-  const doc = await factory.findOne(Transactions, { idempotencyKey });
-  if (doc) throw new AppError(400, 'This request processed before');
-};
+const getIdempotencyKey = require('../utils/getIdempotencyKey');
+const checkIdempotencyKey = require('../utils/checkIdempotencyKey');
 
 const sendInternal = asyncHandler(async (req, res, next) => {
   const idempotencyKey = getIdempotencyKey(req);
@@ -31,10 +22,9 @@ const sendInternal = asyncHandler(async (req, res, next) => {
 
   try {
     await session.withTransaction(async () => {
-      await checkIdempotencyKeyExists(idempotencyKey);
+      await checkIdempotencyKey(Transactions, idempotencyKey);
 
       const requestBody = {
-        type: 'send/internal',
         senderId: req.body.senderId,
         receiverId: req.body.receiverId,
         amount: req.body.amount,
@@ -61,22 +51,15 @@ const sendInternal = asyncHandler(async (req, res, next) => {
         throw new AppError(404, "Receiver doesn't have account");
 
       // Update sender account balance
-      const updateSender = await factory.findOneAndUpdateBySession(
-        UserModel,
-        { _id: senderAccount._id },
-        { $inc: { balance: -requestBody.amount } },
-        session,
-      );
+      senderAccount.balance -= requestBody.amount;
+      senderAccount.save({ session });
 
       // Update receiver account balance
-      const updateReceiver = await factory.findOneAndUpdateBySession(
-        UserModel,
-        { _id: receiverAccount._id },
-        { $inc: { balance: requestBody.amount } },
-        session,
-      );
+      receiverAccount.balance += requestBody.amount;
+      receiverAccount.save({ session });
 
       const transaction = new InternalTransaction({
+        type: 'internal',
         amount: requestBody.amount,
         senderAccount: senderAccount._id,
         receiverAccount: receiverAccount._id,
@@ -89,8 +72,8 @@ const sendInternal = asyncHandler(async (req, res, next) => {
         message: 'Money has transferred successfully',
         data: {
           transaction,
-          updateSender,
-          updateReceiver,
+          senderAccount,
+          receiverAccount,
         },
       });
     });
@@ -170,17 +153,16 @@ const generateXML = (transaction, senderAccount) => {
 
 const sendExternal = asyncHandler(async (req, res, next) => {
   const idempotencyKey = getIdempotencyKey(req);
-
   const session = await mongoose.startSession();
 
   try {
     await session.withTransaction(async () => {
       // Check if idempotency key is exists
-      await checkIdempotencyKeyExists(idempotencyKey);
+      await checkIdempotencyKey(Transactions, idempotencyKey);
 
       const requestBody = {
         ...req.body,
-        type: 'send/external',
+        type: 'external',
         idempotencyKey,
       };
 
