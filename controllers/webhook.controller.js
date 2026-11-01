@@ -27,12 +27,10 @@ const sanitizePayTechBank = (receiverAccount, data) => {
     }
   }
 
-  const date = sanitizeDate(dateMoney.split('-')[0]);
-
   return {
     receiverAccount,
     bank: 'paytech',
-    date,
+    date: sanitizeDate(dateMoney.split('-')[0]),
     amount: Number.parseFloat(dateMoney.split('-')[1].replace(',', '.')),
     reference: chunks[1],
     notes,
