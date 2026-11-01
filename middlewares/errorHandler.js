@@ -18,6 +18,10 @@ const normalizeError = (err) => {
     return new AppError(400, `Invalid type of ${err.message}`);
   }
 
+  if (err.name === 'SyntaxError') {
+    return new AppError(400, err.message);
+  }
+
   if (err.cause.hostname === 'v6.exchangerate-api.com') {
     return new AppError(400, 'Fetching from exchange rate API failed');
   }
